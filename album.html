@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Our Wedding — Photo Gallery</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,500&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* ============================================================
+     CONFIG NOTE: the only things you need to change are in the
+     <script> block near the bottom, under "1. CONFIGURE THIS".
+     ============================================================ */
+
+  :root{
+    --ink:#232019;
+    --paper:#F7F3ED;
+    --paper-2:#FFFFFF;
+    --rose:#A9707A;
+    --gold:#C7A76C;
+    --line:#E4DACD;
+    --muted:#7A6F62;
+    --shadow: 0 18px 50px rgba(35,32,25,0.14);
+    --radius: 3px;
+    --maxw: 1180px;
+  }
+
+  *{ box-sizing:border-box; }
+  html{ scroll-behavior:smooth; }
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Jost', sans-serif;
+    font-weight:400;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  h1,h2,.serif{ font-family:'Cormorant Garamond', serif; }
+  img{ max-width:100%; display:block; }
+  button{ font-family:inherit; cursor:pointer; }
+  a{ color:inherit; }
+
+  ::selection{ background:var(--rose); color:#fff; }
+
+  /* ---------------- HERO ---------------- */
+  .hero{
+    position:relative;
+    height:100dvh;
+    min-height:520px;
+    width:100%;
+    overflow:hidden;
+    background:var(--ink);
+  }
+  .hero-slide{
+    position:absolute; inset:0;
+    background-size:cover;
+    background-position:center;
+    opacity:0;
+    transform:scale(1.08);
+    transition:opacity 1.8s ease, transform 7s ease;
+    will-change:opacity, transform;
+  }
+  .hero-slide.is-active{
+    opacity:1;
+    transform:scale(1);
+  }
+  .hero::after{
+    content:"";
+    position:absolute; inset:0;
+    background:linear-gradient(180deg, rgba(20,17,12,0.15) 0%, rgba(20,17,12,0.05) 40%, rgba(20,17,12,0.55) 100%);
+    pointer-events:none;
+  }
+  .hero-content{
+    position:relative;
+    z-index:2;
+    height:100%;
+    display:flex;
+    flex-direction:column;
+    justify-content:flex-end;
+    padding: 32px clamp(20px, 6vw, 72px) clamp(28px, 6vh, 64px);
+    color:#fdfaf5;
+  }
+  .hero-eyebrow{
+    font-size:13px;
+    letter-spacing:0.14em;
+    color:#e7ddcd;
+    margin:0 0 10px;
+    opacity:0.9;
+  }
+  .hero-title{
+    font-size:clamp(2.6rem, 8vw, 6rem);
+    line-height:1;
+    font-weight:500;
+    margin:0;
+  }
+  .hero-title em{
+    font-style:italic;
+    color:var(--gold);
+  }
+  .hero-sub{
+    margin:14px 0 0;
+    font-size:clamp(0.95rem, 1.6vw, 1.15rem);
+    color:#efe7da;
+    max-width:520px;
+    line-height:1.5;
+  }
+  .hero-scroll{
+    position:absolute;
+    right:clamp(20px, 6vw, 72px);
+    bottom:clamp(28px, 6vh, 64px);
+    z-index:2;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    color:#efe7da;
+    font-size:13px;
+    letter-spacing:0.04em;
+  }
+  .hero-scroll .stick{
+    width:1px; height:34px;
+    background:rgba(239,231,218,0.6);
+    position:relative;
+    overflow:hidden;
+  }
+  .hero-scroll .stick::after{
+    content:"";
+    position:absolute; left:0; top:-100%;
+    width:100%; height:100%;
+    background:var(--gold);
+    animation:hero-stick 1.8s ease-in-out infinite;
+  }
+  @keyframes hero-stick{
+    0%{ top:-100%; }
+    50%{ top:0%; }
+    100%{ top:100%; }
+  }
+  .hero-dots{
+    position:absolute;
+    left:clamp(20px, 6vw, 72px);
+    bottom:clamp(28px, 6vh, 64px);
+    z-index:2;
+    display:flex;
+    gap:8px;
+  }
+  .hero-dots button{
+    width:22px; height:3px;
+    background:rgba(255,255,255,0.35);
+    border:none;
+    padding:0;
+    transition:background 0.4s ease;
+  }
+  .hero-dots button.is-active{ background:var(--gold); }
+
+  /* ---------------- WELCOME LINE ---------------- */
+  .welcome{
+    max-width:640px;
+    margin:0 auto;
+    text-align:center;
+    padding:clamp(56px,10vw,96px) 24px clamp(36px,6vw,56px);
+  }
+  .welcome p{
+    font-family:'Cormorant Garamond', serif;
+    font-style:italic;
+    font-size:clamp(1.2rem, 2.4vw, 1.6rem);
+    line-height:1.6;
+    color:var(--ink);
+    margin:0;
+  }
+  .welcome .rule{
+    width:56px; height:1px;
+    background:var(--gold);
+    margin:0 auto 22px;
+  }
+
+  /* ---------------- GALLERY ---------------- */
+  .gallery-wrap{
+    max-width:var(--maxw);
+    margin:0 auto;
+    padding: 0 clamp(16px, 4vw, 40px) clamp(60px,8vw,100px);
+  }
+  .gallery-head{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:10px;
+    padding-bottom:22px;
+    margin-bottom:28px;
+    border-bottom:1px solid var(--line);
+  }
+  .gallery-head h2{
+    font-size:clamp(1.6rem, 3.4vw, 2.2rem);
+    font-weight:500;
+    margin:0;
+  }
+  .gallery-count{
+    color:var(--muted);
+    font-size:14px;
+  }
+
+  .state-box{
+    text-align:center;
+    padding:70px 20px;
+    color:var(--muted);
+  }
+  .state-box .spinner{
+    width:34px; height:34px;
+    margin:0 auto 18px;
+    border-radius:50%;
+    border:2px solid var(--line);
+    border-top-color:var(--rose);
+    animation:spin 0.9s linear infinite;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+  .state-box.error{ color:#8a4a45; }
+  .state-box a.retry{
+    display:inline-block;
+    margin-top:14px;
+    padding:9px 20px;
+    border:1px solid var(--rose);
+    color:var(--rose);
+    font-size:14px;
+    text-decoration:none;
+  }
+
+  .masonry{
+    column-count:1;
+    column-gap:14px;
+  }
+  @media(min-width:620px){ .masonry{ column-count:2; } }
+  @media(min-width:960px){ .masonry{ column-count:3; } }
+  @media(min-width:1400px){ .masonry{ column-count:4; } }
+
+  .tile{
+    break-inside:avoid;
+    margin-bottom:14px;
+    position:relative;
+    overflow:hidden;
+    background:var(--paper-2);
+    box-shadow:0 1px 3px rgba(35,32,25,0.06);
+  }
+  .tile img{
+    width:100%;
+    height:auto;
+    display:block;
+    background:var(--line);
+    min-height:80px;
+  }
+  .tile .tile-overlay{
+    position:absolute; inset:0;
+    background:linear-gradient(180deg, rgba(20,17,12,0) 55%, rgba(20,17,12,0.55) 100%);
+    opacity:0;
+    transition:opacity 0.25s ease;
+  }
+  .tile:hover .tile-overlay, .tile:focus-within .tile-overlay{ opacity:1; }
+  .tile .dl-btn{
+    position:absolute;
+    right:10px; bottom:10px;
+    z-index:2;
+    width:36px; height:36px;
+    border-radius:50%;
+    background:rgba(247,243,237,0.92);
+    border:none;
+    display:flex; align-items:center; justify-content:center;
+    opacity:0;
+    transform:translateY(6px);
+    transition:opacity 0.25s ease, transform 0.25s ease, background 0.2s ease;
+  }
+  .tile:hover .dl-btn, .tile:focus-within .dl-btn{ opacity:1; transform:translateY(0); }
+  .tile .dl-btn:hover{ background:var(--gold); }
+  .tile .dl-btn svg{ width:16px; height:16px; }
+  .tile .view-btn{
+    position:absolute; inset:0;
+    background:transparent;
+    border:none;
+    padding:0;
+  }
+
+  /* ---------------- LIGHTBOX ---------------- */
+  .lightbox{
+    position:fixed; inset:0;
+    background:rgba(18,15,11,0.94);
+    z-index:100;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding: env(safe-area-inset-top,20px) env(safe-area-inset-right,20px) env(safe-area-inset-bottom,20px) env(safe-area-inset-left,20px);
+  }
+  .lightbox.is-open{ display:flex; }
+  .lightbox figure{
+    margin:0;
+    max-width:min(94vw, 1200px);
+    max-height:88vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:16px;
+  }
+  .lightbox img{
+    max-width:100%;
+    max-height:76vh;
+    width:auto;
+    object-fit:contain;
+    box-shadow:var(--shadow);
+  }
+  .lightbox-actions{
+    display:flex;
+    align-items:center;
+    gap:18px;
+  }
+  .lightbox-actions a.download{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:10px 22px;
+    background:var(--gold);
+    color:#211c14;
+    text-decoration:none;
+    font-size:14px;
+    letter-spacing:0.02em;
+  }
+  .lightbox-actions a.download:hover{ background:#d8b87a; }
+  .lightbox-actions .lb-index{
+    color:#cfc4b3; font-size:13px;
+  }
+  .lightbox .lb-close, .lightbox .lb-nav{
+    position:absolute;
+    background:rgba(255,255,255,0.08);
+    border:none;
+    color:#fdfaf5;
+    width:44px; height:44px;
+    border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    transition:background 0.2s ease;
+  }
+  .lightbox .lb-close:hover, .lightbox .lb-nav:hover{ background:rgba(255,255,255,0.18); }
+  .lightbox .lb-close{ top:18px; right:18px; }
+  .lightbox .lb-prev{ left:18px; top:50%; transform:translateY(-50%); }
+  .lightbox .lb-next{ right:18px; top:50%; transform:translateY(-50%); }
+  @media(max-width:640px){
+    .lightbox .lb-prev, .lightbox .lb-next{ width:38px; height:38px; }
+    .lightbox .lb-prev{ left:8px; }
+    .lightbox .lb-next{ right:8px; }
+  }
+
+  /* ---------------- FOOTER ---------------- */
+  footer{
+    text-align:center;
+    padding:40px 20px 56px;
+    color:var(--muted);
+    font-size:13.5px;
+    border-top:1px solid var(--line);
+  }
+  footer .amp{
+    font-family:'Cormorant Garamond', serif;
+    font-style:italic;
+    color:var(--rose);
+    font-size:16px;
+    display:block;
+    margin-bottom:6px;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    html{ scroll-behavior:auto; }
+    .hero-slide{ transition:opacity 0.6s ease; transform:none !important; }
+    .hero-scroll .stick::after{ animation:none; top:0; }
+  }
+
+  :focus-visible{ outline:2px solid var(--rose); outline-offset:2px; }
+</style>
+</head>
+<body>
+
+  <section class="hero" id="hero" aria-label="Wedding photo highlights">
+    <div id="heroSlides"></div>
+    <div class="hero-content">
+      <p class="hero-eyebrow">You are invited to relive the day</p>
+      <h1 class="hero-title">Anjali <em>&amp;</em> Rohan</h1>
+      <p class="hero-sub">Every photo from our wedding, gathered in one place for family and friends to keep, share and download.</p>
+    </div>
+    <div class="hero-dots" id="heroDots"></div>
+    <div class="hero-scroll"><span class="stick"></span> Scroll for the gallery</div>
+  </section>
+
+  <section class="welcome">
+    <div class="rule"></div>
+    <p>Thank you for being part of our day. This gallery holds every picture our photographers took — browse freely, and take home whichever ones you love, in full quality.</p>
+  </section>
+
+  <section class="gallery-wrap">
+    <div class="gallery-head">
+      <h2>The Full Gallery</h2>
+      <span class="gallery-count" id="galleryCount"></span>
+    </div>
+
+    <div id="galleryState" class="state-box">
+      <div class="spinner"></div>
+      <div>Loading photos from the drive…</div>
+    </div>
+
+    <div class="masonry" id="masonry"></div>
+  </section>
+
+  <footer>
+    <span class="amp">With love</span>
+    Anjali &amp; Rohan · thank you for celebrating with us
+  </footer>
+
+  <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Photo viewer">
+    <button class="lb-close" id="lbClose" aria-label="Close">✕</button>
+    <button class="lb-nav lb-prev" id="lbPrev" aria-label="Previous photo">‹</button>
+    <button class="lb-nav lb-next" id="lbNext" aria-label="Next photo">›</button>
+    <figure>
+      <img id="lbImage" src="" alt="">
+      <div class="lightbox-actions">
+        <a class="download" id="lbDownload" href="#" download>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"/></svg>
+          Download full size
+        </a>
+        <span class="lb-index" id="lbIndex"></span>
+      </div>
+    </figure>
+  </div>
+
+<script>
+/* =====================================================================
+   1. CONFIGURE THIS — the only section you need to edit
+   =====================================================================
+   a) Create a Google Cloud API key:
+      - Go to console.cloud.google.com → create/select a project
+      - Enable the "Google Drive API"
+      - Create credentials → API key
+      - (Recommended) restrict the key to the Drive API and to your
+        website's domain (HTTP referrer restriction)
+   b) Share BOTH Drive folders as "Anyone with the link" → Viewer
+   c) Copy each folder's ID from its URL:
+      https://drive.google.com/drive/folders/  <-- THIS PART -->
+   d) Paste your key and both folder IDs below.
+   ===================================================================== */
+const CONFIG = {
+  API_KEY: "AIzaSyAu2_ZOT8ikluVX5jJQ_041w1GhIHyoh_M",
+  FOLDER_IDS: [
+    "1_Tkd-yD7VobZNjpdVVQ2ge-uNrhYvFys?usp=drive_link",
+    "YOUR_SECOND_FOLDER_ID"
+  ],
+  HERO_IMAGE_COUNT: 5,
+  HERO_INTERVAL_MS: 5000
+};
+/* ===================================================================== */
+
+const els = {
+  heroSlides: document.getElementById('heroSlides'),
+  heroDots: document.getElementById('heroDots'),
+  masonry: document.getElementById('masonry'),
+  galleryState: document.getElementById('galleryState'),
+  galleryCount: document.getElementById('galleryCount'),
+  lightbox: document.getElementById('lightbox'),
+  lbImage: document.getElementById('lbImage'),
+  lbDownload: document.getElementById('lbDownload'),
+  lbIndex: document.getElementById('lbIndex'),
+  lbClose: document.getElementById('lbClose'),
+  lbPrev: document.getElementById('lbPrev'),
+  lbNext: document.getElementById('lbNext'),
+};
+
+let allPhotos = [];
+let lightboxIndex = 0;
+const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// ---------- Google Drive fetching ----------
+
+async function fetchFolder(folderId) {
+  const files = [];
+  let pageToken = "";
+  const fields = "nextPageToken,files(id,name,mimeType,thumbnailLink,webContentLink,imageMediaMetadata)";
+  do {
+    const url = `https://www.googleapis.com/drive/v3/files?q='${encodeURIComponent(folderId)}'+in+parents+and+mimeType+contains+'image/'+and+trashed=false&fields=${encodeURIComponent(fields)}&pageSize=1000&key=${CONFIG.API_KEY}${pageToken ? "&pageToken=" + pageToken : ""}`;
+    const res = await fetch(url);
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      const msg = body?.error?.message || `Request failed (${res.status})`;
+      throw new Error(msg);
+    }
+    const data = await res.json();
+    (data.files || []).forEach(f => files.push(f));
+    pageToken = data.nextPageToken || "";
+  } while (pageToken);
+  return files;
+}
+
+function thumbUrl(file, size) {
+  if (file.thumbnailLink) {
+    return file.thumbnailLink.replace(/=s\d+$/, `=s${size}`);
+  }
+  return `https://drive.google.com/thumbnail?id=${file.id}&sz=w${size}`;
+}
+
+function downloadUrl(file) {
+  return `https://drive.google.com/uc?export=download&id=${file.id}`;
+}
+
+function shuffled(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// ---------- Hero slideshow ----------
+
+function buildHero(photos) {
+  const picks = shuffled(photos).slice(0, CONFIG.HERO_IMAGE_COUNT);
+  if (picks.length === 0) return;
+
+  picks.forEach((file, i) => {
+    const slide = document.createElement('div');
+    slide.className = 'hero-slide' + (i === 0 ? ' is-active' : '');
+    slide.style.backgroundImage = `url("${thumbUrl(file, 1920)}")`;
+    els.heroSlides.appendChild(slide);
+
+    const dot = document.createElement('button');
+    dot.className = i === 0 ? 'is-active' : '';
+    dot.setAttribute('aria-label', `Show highlight photo ${i + 1}`);
+    dot.addEventListener('click', () => setHero(i));
+    els.heroDots.appendChild(dot);
+  });
+
+  if (picks.length > 1 && !prefersReducedMotion) {
+    setInterval(() => {
+      const current = els.heroSlides.querySelectorAll('.hero-slide');
+      let idx = [...current].findIndex(s => s.classList.contains('is-active'));
+      setHero((idx + 1) % current.length);
+    }, CONFIG.HERO_INTERVAL_MS);
+  }
+}
+
+function setHero(index) {
+  const slides = els.heroSlides.querySelectorAll('.hero-slide');
+  const dots = els.heroDots.querySelectorAll('button');
+  slides.forEach((s, i) => s.classList.toggle('is-active', i === index));
+  dots.forEach((d, i) => d.classList.toggle('is-active', i === index));
+}
+
+// ---------- Gallery grid ----------
+
+function buildGallery(photos) {
+  els.masonry.innerHTML = "";
+  photos.forEach((file, i) => {
+    const tile = document.createElement('div');
+    tile.className = 'tile';
+
+    const img = document.createElement('img');
+    img.src = thumbUrl(file, 600);
+    img.loading = 'lazy';
+    img.decoding = 'async';
+    img.alt = file.name || 'Wedding photo';
+
+    const viewBtn = document.createElement('button');
+    viewBtn.className = 'view-btn';
+    viewBtn.setAttribute('aria-label', `Open photo ${i + 1} of ${photos.length}`);
+    viewBtn.addEventListener('click', () => openLightbox(i));
+
+    const overlay = document.createElement('div');
+    overlay.className = 'tile-overlay';
+
+    const dlBtn = document.createElement('a');
+    dlBtn.className = 'dl-btn';
+    dlBtn.href = downloadUrl(file);
+    dlBtn.setAttribute('download', file.name || '');
+    dlBtn.setAttribute('aria-label', 'Download full size photo');
+    dlBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="#232019" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"/></svg>';
+
+    tile.appendChild(img);
+    tile.appendChild(overlay);
+    tile.appendChild(viewBtn);
+    tile.appendChild(dlBtn);
+    els.masonry.appendChild(tile);
+  });
+
+  els.galleryCount.textContent = photos.length
+    ? `${photos.length} photograph${photos.length === 1 ? '' : 's'}`
+    : '';
+}
+
+// ---------- Lightbox ----------
+
+function openLightbox(index) {
+  lightboxIndex = index;
+  renderLightbox();
+  els.lightbox.classList.add('is-open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeLightbox() {
+  els.lightbox.classList.remove('is-open');
+  document.body.style.overflow = '';
+}
+
+function renderLightbox() {
+  const file = allPhotos[lightboxIndex];
+  if (!file) return;
+  els.lbImage.src = thumbUrl(file, 1920);
+  els.lbImage.alt = file.name || 'Wedding photo';
+  els.lbDownload.href = downloadUrl(file);
+  els.lbDownload.setAttribute('download', file.name || '');
+  els.lbIndex.textContent = `${lightboxIndex + 1} / ${allPhotos.length}`;
+}
+
+function stepLightbox(delta) {
+  lightboxIndex = (lightboxIndex + delta + allPhotos.length) % allPhotos.length;
+  renderLightbox();
+}
+
+els.lbClose.addEventListener('click', closeLightbox);
+els.lbPrev.addEventListener('click', () => stepLightbox(-1));
+els.lbNext.addEventListener('click', () => stepLightbox(1));
+els.lightbox.addEventListener('click', (e) => { if (e.target === els.lightbox) closeLightbox(); });
+
+document.addEventListener('keydown', (e) => {
+  if (!els.lightbox.classList.contains('is-open')) return;
+  if (e.key === 'Escape') closeLightbox();
+  if (e.key === 'ArrowLeft') stepLightbox(-1);
+  if (e.key === 'ArrowRight') stepLightbox(1);
+});
+
+// basic touch swipe for the lightbox
+let touchStartX = null;
+els.lightbox.addEventListener('touchstart', (e) => { touchStartX = e.changedTouches[0].clientX; }, { passive: true });
+els.lightbox.addEventListener('touchend', (e) => {
+  if (touchStartX === null) return;
+  const dx = e.changedTouches[0].clientX - touchStartX;
+  if (Math.abs(dx) > 50) stepLightbox(dx > 0 ? -1 : 1);
+  touchStartX = null;
+}, { passive: true });
+
+// ---------- Boot ----------
+
+function showError(message) {
+  els.galleryState.className = 'state-box error';
+  els.galleryState.innerHTML = `
+    <div>Couldn't load the photos: ${message}</div>
+    <div style="font-size:13px;margin-top:6px;">Check that the API key and folder IDs are set correctly, and that both folders are shared as "Anyone with the link".</div>
+    <a href="#" class="retry" id="retryBtn">Try again</a>
+  `;
+  document.getElementById('retryBtn').addEventListener('click', (e) => { e.preventDefault(); boot(); });
+}
+
+async function boot() {
+  els.galleryState.style.display = 'block';
+  els.galleryState.className = 'state-box';
+  els.galleryState.innerHTML = `<div class="spinner"></div><div>Loading photos from the drive…</div>`;
+
+  if (CONFIG.API_KEY.startsWith('YOUR_') || CONFIG.FOLDER_IDS.some(id => id.startsWith('YOUR_'))) {
+    showError('the gallery isn\'t configured yet — add your API key and folder IDs in the script.');
+    return;
+  }
+
+  try {
+    const results = await Promise.all(CONFIG.FOLDER_IDS.map(fetchFolder));
+    const merged = results.flat();
+    // de-duplicate in case a file appears in both folders
+    const seen = new Set();
+    allPhotos = merged.filter(f => (seen.has(f.id) ? false : (seen.add(f.id), true)));
+
+    if (allPhotos.length === 0) {
+      showError('no images were found in the folders provided.');
+      return;
+    }
+
+    els.galleryState.style.display = 'none';
+    buildHero(allPhotos);
+    buildGallery(allPhotos);
+  } catch (err) {
+    showError(err.message || 'something went wrong.');
+  }
+}
+
+boot();
+</script>
+</body>
+</html>
