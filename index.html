@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Rishal & Susmi — Photo Gallery</title>
+<title>Our Wedding — Photo Gallery</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,500&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -226,12 +226,16 @@
   }
 
   .masonry{
-    column-count:1;
-    column-gap:14px;
+    column-count:2;
+    column-gap:8px;
   }
-  @media(min-width:620px){ .masonry{ column-count:2; } }
+  @media(min-width:620px){ .masonry{ column-count:2; column-gap:14px; } }
   @media(min-width:960px){ .masonry{ column-count:3; } }
   @media(min-width:1400px){ .masonry{ column-count:4; } }
+
+  @media(max-width:619px){
+    .tile{ margin-bottom:8px; }
+  }
 
   .tile{
     break-inside:avoid;
@@ -377,7 +381,7 @@
     <div id="heroSlides"></div>
     <div class="hero-content">
       <p class="hero-eyebrow">You are invited to relive the day</p>
-      <h1 class="hero-title">Susmi <em>&amp;</em> Rishal</h1>
+      <h1 class="hero-title">Anjali <em>&amp;</em> Rohan</h1>
       <p class="hero-sub">Every photo from our wedding, gathered in one place for family and friends to keep, share and download.</p>
     </div>
     <div class="hero-dots" id="heroDots"></div>
@@ -405,7 +409,7 @@
 
   <footer>
     <span class="amp">With love</span>
-    Susmi &amp; Rishal · thank you for celebrating with us
+    Anjali &amp; Rohan · thank you for celebrating with us
   </footer>
 
   <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Photo viewer">
