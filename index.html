@@ -405,7 +405,7 @@
 
   <footer>
     <span class="amp">With love</span>
-    Anjali &amp; Rohan · thank you for celebrating with us
+    Susmi &amp; Rishal · thank you for celebrating with us
   </footer>
 
   <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Photo viewer">
@@ -445,10 +445,33 @@ const CONFIG = {
     "1_Tkd-yD7VobZNjpdVVQ2ge-uNrhYvFys",
     
   ],
+  // Paste the file IDs of your chosen hero photos here, in the order you
+  // want them to appear (get each ID from the photo's Drive share link:
+  // drive.google.com/file/d/THIS_PART/view). Leave as [] to auto-pick instead.
+  HERO_FILE_IDS: [
+    "1lumcj-NzcMtYKICm6HfCAkNbgo5yXAyS",
+    "10tx91WAifnm7Bwf2eJm4s8ea_4rSAtd0",
+    "1eA3p0cqoxDEGQ0vqRi_BIWMswwP7mKwH",
+    "1jq_vsY92UAwB6eR83G-V6ONoMfkQeGgG",
+    "1VebsjNRifoC8G-fZKSfvSPTZlIa-pdGn"
+  ],
   HERO_IMAGE_COUNT: 5,
   HERO_INTERVAL_MS: 5000
 };
 /* ===================================================================== */
+
+// Accepts a bare folder ID, or a full Drive URL/share-link (with ?usp=... etc)
+// pasted by mistake, and returns just the clean ID. This protects against
+// the most common copy-paste mistake when filling in FOLDER_IDS above.
+function normalizeFolderId(raw) {
+  if (!raw) return raw;
+  let id = raw.trim();
+  const match = id.match(/\/folders\/([^/?]+)/);
+  if (match) id = match[1];
+  id = id.split('?')[0].split('&')[0].split('/')[0];
+  return id;
+}
+CONFIG.FOLDER_IDS = CONFIG.FOLDER_IDS.map(normalizeFolderId);
 
 const els = {
   heroSlides: document.getElementById('heroSlides'),
@@ -513,7 +536,21 @@ function shuffled(arr) {
 // ---------- Hero slideshow ----------
 
 function buildHero(photos) {
-  const picks = shuffled(photos).slice(0, CONFIG.HERO_IMAGE_COUNT);
+  let picks;
+
+  if (CONFIG.HERO_FILE_IDS && CONFIG.HERO_FILE_IDS.length > 0) {
+    // Use the fixed, curated set — in the order given — matched by file ID.
+    picks = CONFIG.HERO_FILE_IDS
+      .map(id => photos.find(f => f.id === id))
+      .filter(Boolean);
+  }
+
+  if (!picks || picks.length === 0) {
+    // Fallback: no fixed list given (or none of those IDs matched), so
+    // auto-pick a random set instead.
+    picks = shuffled(photos).slice(0, CONFIG.HERO_IMAGE_COUNT);
+  }
+
   if (picks.length === 0) return;
 
   picks.forEach((file, i) => {
