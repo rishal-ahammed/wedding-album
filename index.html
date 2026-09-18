@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Check 1 Our Wedding — Photo Gallery</title>
+<title>Our Wedding — Photo Gallery</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,500&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -597,6 +597,18 @@ function fullImageUrl(file) {
   return `https://drive.google.com/thumbnail?id=${file.id}&sz=w2000`;
 }
 
+// Hero photos are shown full-bleed but never need more pixels than a large
+// screen actually has. Capping this (vs. the true original) meaningfully
+// cuts file size and decode time, without any visible quality loss —
+// and directly helps with mobile browsers discarding/redecoding large
+// off-screen bitmaps when you scroll back up to the hero.
+function heroImageUrl(file) {
+  if (file.thumbnailLink) {
+    return file.thumbnailLink.replace(/=s\d+$/, '=s2200');
+  }
+  return `https://drive.google.com/thumbnail?id=${file.id}&sz=w2200`;
+}
+
 function shuffled(arr) {
   const a = arr.slice();
   for (let i = a.length - 1; i > 0; i--) {
@@ -631,10 +643,16 @@ function buildHero(photos) {
     slide.className = 'hero-slide' + (i === 0 ? ' is-active' : '');
 
     const img = document.createElement('img');
-    img.src = fullImageUrl(file);
     img.alt = file.name || 'Wedding highlight photo';
     img.decoding = 'async';
-    img.setAttribute('fetchpriority', i === 0 ? 'high' : 'low');
+    if (i === 0) {
+      img.src = heroImageUrl(file);
+      img.setAttribute('fetchpriority', 'high');
+    } else {
+      // Loaded just-in-time (see loadHeroSlide) rather than all at once,
+      // so the first photo isn't competing for bandwidth with the rest.
+      img.dataset.src = heroImageUrl(file);
+    }
     slide.appendChild(img);
     els.heroSlides.appendChild(slide);
 
@@ -645,16 +663,37 @@ function buildHero(photos) {
     els.heroDots.appendChild(dot);
   });
 
+  // Preload the second slide once the page has had a moment to settle,
+  // so the first automatic transition is instant.
+  const idle = window.requestIdleCallback || ((fn) => setTimeout(fn, 300));
+  idle(() => loadHeroSlide(1));
+
   if (picks.length > 1 && !prefersReducedMotion) {
     setInterval(() => {
       const current = els.heroSlides.querySelectorAll('.hero-slide');
       let idx = [...current].findIndex(s => s.classList.contains('is-active'));
-      setHero((idx + 1) % current.length);
+      const nextIdx = (idx + 1) % current.length;
+      setHero(nextIdx);
+      // Stay one slide ahead: preload the slide after next during the
+      // upcoming interval, rather than loading everything up front.
+      loadHeroSlide((nextIdx + 1) % current.length);
     }, CONFIG.HERO_INTERVAL_MS);
   }
 }
 
+function loadHeroSlide(index) {
+  const slides = els.heroSlides.querySelectorAll('.hero-slide');
+  const slide = slides[index];
+  if (!slide) return;
+  const img = slide.querySelector('img');
+  if (img && img.dataset.src) {
+    img.src = img.dataset.src;
+    delete img.dataset.src;
+  }
+}
+
 function setHero(index) {
+  loadHeroSlide(index);
   const slides = els.heroSlides.querySelectorAll('.hero-slide');
   const dots = els.heroDots.querySelectorAll('button');
   slides.forEach((s, i) => s.classList.toggle('is-active', i === index));
