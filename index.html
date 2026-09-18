@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Our Wedding — Photo Gallery</title>
+<title>Check 1 Our Wedding — Photo Gallery</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,500&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -254,15 +254,21 @@
   }
 
   .masonry{
-    column-count:2;
-    column-gap:8px;
+    display:flex;
+    align-items:flex-start;
+    gap:8px;
   }
-  @media(min-width:620px){ .masonry{ column-count:2; column-gap:14px; } }
-  @media(min-width:960px){ .masonry{ column-count:3; } }
-  @media(min-width:1400px){ .masonry{ column-count:4; } }
+  .masonry-col{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    flex:1 1 0;
+    min-width:0;
+  }
+  @media(min-width:620px){ .masonry, .masonry-col{ gap:14px; } }
 
   @media(max-width:619px){
-    .tile{ margin-bottom:8px; }
+    .tile{ margin-bottom:0; }
   }
   @media (hover:none){
     .tile .dl-btn{
@@ -276,23 +282,31 @@
   body{
     -webkit-overflow-scrolling:touch;
   }
+  button, a{
+    -webkit-tap-highlight-color:transparent;
+    touch-action:manipulation;
+  }
 
   .tile{
-    break-inside:avoid;
-    margin-bottom:14px;
     position:relative;
     overflow:hidden;
     background:var(--paper-2);
     box-shadow:0 1px 3px rgba(35,32,25,0.06);
     content-visibility:auto;
-    contain-intrinsic-size: 1px 320px;
+    opacity:0;
+    transform:translateY(10px);
+    transition:opacity 0.5s ease, transform 0.5s ease;
+  }
+  .tile.in-view{
+    opacity:1;
+    transform:translateY(0);
   }
   .tile img{
     width:100%;
-    height:auto;
+    height:100%;
     display:block;
+    object-fit:cover;
     background:var(--line);
-    min-height:80px;
   }
   .tile .tile-overlay{
     position:absolute; inset:0;
@@ -424,7 +438,7 @@
     <div id="heroSlides"></div>
     <div class="hero-content">
       <p class="hero-eyebrow">You are invited to relive the day</p>
-      <h1 class="hero-title">Susmi <em>&amp;</em> Rishal</h1>
+      <h1 class="hero-title">Anjali <em>&amp;</em> Rohan</h1>
       <p class="hero-sub">Every photo from our wedding, gathered in one place for family and friends to keep, share and download.</p>
     </div>
     <div class="hero-dots" id="heroDots"></div>
@@ -452,7 +466,7 @@
 
   <footer>
     <span class="amp">With love</span>
-    Susmi &amp; Rishal · thank you for celebrating with us
+    Anjali &amp; Rohan · thank you for celebrating with us
   </footer>
 
   <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Photo viewer">
@@ -496,8 +510,7 @@ const CONFIG = {
   // want them to appear (get each ID from the photo's Drive share link:
   // drive.google.com/file/d/THIS_PART/view). Leave as [] to auto-pick instead.
   HERO_FILE_IDS: [
-
-  "1lumcj-NzcMtYKICm6HfCAkNbgo5yXAyS",
+    "1lumcj-NzcMtYKICm6HfCAkNbgo5yXAyS",
     "10tx91WAifnm7Bwf2eJm4s8ea_4rSAtd0",
     "1eA3p0cqoxDEGQ0vqRi_BIWMswwP7mKwH",
     "1jq_vsY92UAwB6eR83G-V6ONoMfkQeGgG",
@@ -572,8 +585,11 @@ function downloadUrl(file) {
   return `https://drive.google.com/uc?export=download&id=${file.id}`;
 }
 
-// Full-resolution, uncompressed version of the file — used for the hero,
-// where thumbnailLink's generated preview was causing a visible quality drop.
+// Full-resolution version of the file, served from the same reliable
+// image domain as the gallery thumbnails (avoids the uc?export=view
+// endpoint, which Google increasingly blocks for direct hotlinking).
+// Requesting size "0" returns the original resolution instead of a
+// downscaled, recompressed preview.
 function fullImageUrl(file) {
   if (file.thumbnailLink) {
     return file.thumbnailLink.replace(/=s\d+$/, '=s0');
@@ -647,11 +663,54 @@ function setHero(index) {
 
 // ---------- Gallery grid ----------
 
+function getColumnCount() {
+  const w = window.innerWidth;
+  if (w >= 1400) return 4;
+  if (w >= 960) return 3;
+  return 2;
+}
+
+let revealObserver = null;
+function getRevealObserver() {
+  if (revealObserver) return revealObserver;
+  if (!('IntersectionObserver' in window)) return null;
+  revealObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('in-view');
+        revealObserver.unobserve(entry.target);
+      }
+    });
+  }, { rootMargin: '80px 0px' });
+  return revealObserver;
+}
+
 function buildGallery(photos) {
   els.masonry.innerHTML = "";
+  const colCount = getColumnCount();
+  const columns = [];
+  const colHeights = new Array(colCount).fill(0);
+
+  for (let c = 0; c < colCount; c++) {
+    const col = document.createElement('div');
+    col.className = 'masonry-col';
+    columns.push(col);
+    els.masonry.appendChild(col);
+  }
+
+  const observer = getRevealObserver();
+
   photos.forEach((file, i) => {
+    // Use Drive's own reported dimensions so the tile's final size is
+    // known immediately, before the image has even started loading —
+    // this is what prevents layout shifts / reflow storms while scrolling.
+    const w = (file.imageMediaMetadata && file.imageMediaMetadata.width) || 4;
+    const h = (file.imageMediaMetadata && file.imageMediaMetadata.height) || 3;
+    const ratio = w / h;
+
     const tile = document.createElement('div');
     tile.className = 'tile';
+    tile.style.aspectRatio = `${w} / ${h}`;
 
     const img = document.createElement('img');
     img.src = thumbUrl(file, 600);
@@ -678,7 +737,19 @@ function buildGallery(photos) {
     tile.appendChild(overlay);
     tile.appendChild(viewBtn);
     tile.appendChild(dlBtn);
-    els.masonry.appendChild(tile);
+
+    // Place into whichever column is currently shortest, using the
+    // aspect ratio to estimate the height it will add (equal column
+    // widths assumed, so relative height ~ 1 / ratio).
+    let shortestIdx = 0;
+    for (let c = 1; c < colCount; c++) {
+      if (colHeights[c] < colHeights[shortestIdx]) shortestIdx = c;
+    }
+    colHeights[shortestIdx] += 1 / ratio;
+    columns[shortestIdx].appendChild(tile);
+
+    observer && observer.observe(tile);
+    if (!observer) tile.classList.add('in-view');
   });
 
   els.galleryCount.textContent = photos.length
@@ -703,7 +774,7 @@ function closeLightbox() {
 function renderLightbox() {
   const file = allPhotos[lightboxIndex];
   if (!file) return;
-  els.lbImage.src = thumbUrl(file, 1920);
+  els.lbImage.src = fullImageUrl(file);
   els.lbImage.alt = file.name || 'Wedding photo';
   els.lbDownload.href = downloadUrl(file);
   els.lbDownload.setAttribute('download', file.name || '');
@@ -774,10 +845,24 @@ async function boot() {
     els.galleryState.style.display = 'none';
     buildHero(allPhotos);
     buildGallery(allPhotos);
+    lastColCount = getColumnCount();
   } catch (err) {
     showError(err.message || 'something went wrong.');
   }
 }
+
+let lastColCount = null;
+let resizeTimer = null;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    const c = getColumnCount();
+    if (allPhotos.length && c !== lastColCount) {
+      lastColCount = c;
+      buildGallery(allPhotos);
+    }
+  }, 200);
+});
 
 boot();
 </script>
