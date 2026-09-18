@@ -163,6 +163,26 @@
   }
   .hero-dots button.is-active{ background:var(--gold); }
 
+  .hero-download{
+    display:none;
+    position:absolute;
+    z-index:3;
+    width:44px; height:44px;
+    border-radius:50%;
+    align-items:center;
+    justify-content:center;
+    background:rgba(253,250,245,0.16);
+    border:1px solid rgba(253,250,245,0.4);
+    color:#fdfaf5;
+    backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);
+    transition:background 0.2s ease, transform 0.15s ease;
+  }
+  .hero-download:active{
+    transform:scale(0.94);
+    background:rgba(253,250,245,0.3);
+  }
+
   @media(max-width:640px){
     .hero-content{ padding-bottom:88px; }
     .hero-sub{
@@ -179,6 +199,11 @@
       font-size:11px;
     }
     .hero-dots{ bottom:18px; }
+    .hero-download{
+      display:flex;
+      right:20px;
+      bottom:18px;
+    }
   }
 
   /* ---------------- WELCOME LINE ---------------- */
@@ -443,6 +468,9 @@
     </div>
     <div class="hero-dots" id="heroDots"></div>
     <div class="hero-scroll"><span class="stick"></span> Scroll for the gallery</div>
+    <a class="hero-download" id="heroDownload" href="#" download aria-label="Download this photo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"/></svg>
+    </a>
   </section>
 
   <section class="welcome">
@@ -547,9 +575,11 @@ const els = {
   lbClose: document.getElementById('lbClose'),
   lbPrev: document.getElementById('lbPrev'),
   lbNext: document.getElementById('lbNext'),
+  heroDownload: document.getElementById('heroDownload'),
 };
 
 let allPhotos = [];
+let heroPicks = [];
 let lightboxIndex = 0;
 const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -637,6 +667,7 @@ function buildHero(photos) {
   }
 
   if (picks.length === 0) return;
+  heroPicks = picks;
 
   picks.forEach((file, i) => {
     const slide = document.createElement('div');
@@ -662,6 +693,8 @@ function buildHero(photos) {
     dot.addEventListener('click', () => setHero(i));
     els.heroDots.appendChild(dot);
   });
+
+  updateHeroDownload(0);
 
   // Preload the second slide once the page has had a moment to settle,
   // so the first automatic transition is instant.
@@ -694,10 +727,18 @@ function loadHeroSlide(index) {
 
 function setHero(index) {
   loadHeroSlide(index);
+  updateHeroDownload(index);
   const slides = els.heroSlides.querySelectorAll('.hero-slide');
   const dots = els.heroDots.querySelectorAll('button');
   slides.forEach((s, i) => s.classList.toggle('is-active', i === index));
   dots.forEach((d, i) => d.classList.toggle('is-active', i === index));
+}
+
+function updateHeroDownload(index) {
+  const file = heroPicks[index];
+  if (!file || !els.heroDownload) return;
+  els.heroDownload.href = downloadUrl(file);
+  els.heroDownload.setAttribute('download', file.name || '');
 }
 
 // ---------- Gallery grid ----------
