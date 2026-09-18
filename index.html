@@ -270,15 +270,6 @@
   @media(max-width:619px){
     .tile{ margin-bottom:0; }
   }
-  @media (hover:none){
-    .tile .dl-btn{
-      opacity:1;
-      transform:none;
-      width:32px; height:32px;
-      background:rgba(247,243,237,0.85);
-    }
-    .tile .tile-overlay{ opacity:1; background:linear-gradient(180deg, rgba(20,17,12,0) 65%, rgba(20,17,12,0.35) 100%); }
-  }
   body{
     -webkit-overflow-scrolling:touch;
   }
@@ -310,26 +301,23 @@
   }
   .tile .tile-overlay{
     position:absolute; inset:0;
-    background:linear-gradient(180deg, rgba(20,17,12,0) 55%, rgba(20,17,12,0.55) 100%);
-    opacity:0;
-    transition:opacity 0.25s ease;
+    background:linear-gradient(180deg, rgba(20,17,12,0) 60%, rgba(20,17,12,0.4) 100%);
+    pointer-events:none;
   }
-  .tile:hover .tile-overlay, .tile:focus-within .tile-overlay{ opacity:1; }
   .tile .dl-btn{
     position:absolute;
     right:10px; bottom:10px;
     z-index:2;
-    width:36px; height:36px;
+    width:34px; height:34px;
     border-radius:50%;
     background:rgba(247,243,237,0.92);
     border:none;
     display:flex; align-items:center; justify-content:center;
-    opacity:0;
-    transform:translateY(6px);
-    transition:opacity 0.25s ease, transform 0.25s ease, background 0.2s ease;
+    transition:background 0.2s ease, transform 0.15s ease, opacity 0.2s ease;
   }
-  .tile:hover .dl-btn, .tile:focus-within .dl-btn{ opacity:1; transform:translateY(0); }
   .tile .dl-btn:hover{ background:var(--gold); }
+  .tile .dl-btn:active{ transform:scale(0.92); }
+  .tile .dl-btn[data-busy="1"]{ opacity:0.55; pointer-events:none; }
   .tile .dl-btn svg{ width:16px; height:16px; }
   .tile .view-btn{
     position:absolute; inset:0;
@@ -370,7 +358,7 @@
     align-items:center;
     gap:18px;
   }
-  .lightbox-actions a.download{
+  .lightbox-actions .download{
     display:inline-flex;
     align-items:center;
     gap:8px;
@@ -381,7 +369,9 @@
     font-size:14px;
     letter-spacing:0.02em;
   }
-  .lightbox-actions a.download:hover{ background:#d8b87a; }
+  .lightbox-actions .download:hover{ background:#d8b87a; }
+  .lightbox-actions .download[data-busy="1"]{ opacity:0.6; pointer-events:none; }
+  .lightbox-actions .download{ border:none; font-family:inherit; }
   .lightbox-actions .lb-index{
     color:#cfc4b3; font-size:13px;
   }
@@ -476,10 +466,10 @@
     <figure>
       <img id="lbImage" src="" alt="">
       <div class="lightbox-actions">
-        <a class="download" id="lbDownload" href="#" download>
+        <button class="download" id="lbDownload" type="button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"/></svg>
           Download full size
-        </a>
+        </button>
         <span class="lb-index" id="lbIndex"></span>
       </div>
     </figure>
@@ -583,6 +573,39 @@ function thumbUrl(file, size) {
 
 function downloadUrl(file) {
   return `https://drive.google.com/uc?export=download&id=${file.id}`;
+}
+
+// A plain <a href download> is silently ignored by browsers for
+// cross-origin files (Drive is a different origin from this page), which
+// is why clicking a download link was just navigating to Drive instead
+// of saving the file. To force a real save, we fetch the actual bytes
+// ourselves — via the Drive API's alt=media endpoint, the same
+// CORS-enabled domain already used to list the photos — and hand the
+// browser a local blob to download, which the download attribute *does*
+// honor for same-origin (blob:) URLs.
+async function triggerDownload(file, btn) {
+  if (!file || !btn || btn.dataset.busy === '1') return;
+  btn.dataset.busy = '1';
+  try {
+    const apiUrl = `https://www.googleapis.com/drive/v3/files/${file.id}?alt=media&key=${CONFIG.API_KEY}`;
+    const res = await fetch(apiUrl);
+    if (!res.ok) throw new Error('download request failed');
+    const blob = await res.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = file.name || 'photo.jpg';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 15000);
+  } catch (err) {
+    // Best-effort fallback: open Drive's own link directly rather than
+    // leaving the tap looking like it did nothing.
+    window.open(downloadUrl(file), '_blank', 'noopener');
+  } finally {
+    btn.dataset.busy = '0';
+  }
 }
 
 // Full-resolution version of the file, served from the same reliable
@@ -765,12 +788,15 @@ function buildGallery(photos) {
     const overlay = document.createElement('div');
     overlay.className = 'tile-overlay';
 
-    const dlBtn = document.createElement('a');
+    const dlBtn = document.createElement('button');
+    dlBtn.type = 'button';
     dlBtn.className = 'dl-btn';
-    dlBtn.href = downloadUrl(file);
-    dlBtn.setAttribute('download', file.name || '');
     dlBtn.setAttribute('aria-label', 'Download full size photo');
     dlBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="#232019" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"/></svg>';
+    dlBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      triggerDownload(file, dlBtn);
+    });
 
     tile.appendChild(img);
     tile.appendChild(overlay);
@@ -815,8 +841,6 @@ function renderLightbox() {
   if (!file) return;
   els.lbImage.src = fullImageUrl(file);
   els.lbImage.alt = file.name || 'Wedding photo';
-  els.lbDownload.href = downloadUrl(file);
-  els.lbDownload.setAttribute('download', file.name || '');
   els.lbIndex.textContent = `${lightboxIndex + 1} / ${allPhotos.length}`;
 }
 
@@ -828,6 +852,10 @@ function stepLightbox(delta) {
 els.lbClose.addEventListener('click', closeLightbox);
 els.lbPrev.addEventListener('click', () => stepLightbox(-1));
 els.lbNext.addEventListener('click', () => stepLightbox(1));
+els.lbDownload.addEventListener('click', () => {
+  const file = allPhotos[lightboxIndex];
+  if (file) triggerDownload(file, els.lbDownload);
+});
 els.lightbox.addEventListener('click', (e) => { if (e.target === els.lightbox) closeLightbox(); });
 
 document.addEventListener('keydown', (e) => {
